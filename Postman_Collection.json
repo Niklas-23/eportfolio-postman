@@ -1,0 +1,368 @@
+{
+	"info": {
+		"_postman_id": "21777ce3-1a47-4f00-b06d-0611e922efd7",
+		"name": "Books",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Integration test",
+			"item": [
+				{
+					"name": "Create household",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.globals.set(\"householdId\", pm.response.json().id);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.globals.set(\"numberOfUsers\", 2)\r",
+									"pm.globals.set(\"currentUserCount\", 0)\r",
+									"\r",
+									"pm.globals.set(\"numberOfWishlistAdds\", 4)\r",
+									"pm.globals.set(\"currentWishlistCount\", 0)\r",
+									"\r",
+									"pm.globals.set(\"wishlistIds\", [])\r",
+									"\r",
+									"const getBooks = {\r",
+									"    url: `${pm.environment.get(\"host\")}/books`,\r",
+									"    method: \"GET\",\r",
+									"    header: \"G-TOKEN:ROM831ESV\"\r",
+									"}\r",
+									"\r",
+									"pm.sendRequest(getBooks, function(err, books){\r",
+									"    const ids = _.map(books.json(), function(book){\r",
+									"        return book.id\r",
+									"    })\r",
+									"    pm.globals.set(\"bookIds\", ids)\r",
+									"})"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "G-Token",
+								"value": "ROM831ESV",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\": \"Mein eigener Haushalt\"\r\n}"
+						},
+						"url": {
+							"raw": "{{host}}/households",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"households"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create user",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const wishlistIds = pm.globals.get(\"wishlistIds\")\r",
+									"wishlistIds.push(pm.response.json().wishlistId)\r",
+									"pm.globals.set(\"wishlistIds\", wishlistIds)\r",
+									"\r",
+									"let userCount = pm.globals.get(\"currentUserCount\")\r",
+									"userCount++\r",
+									"pm.globals.set(\"currentUserCount\", userCount)\r",
+									"\r",
+									"if(userCount < pm.globals.get(\"numberOfUsers\")){\r",
+									"    postman.setNextRequest(\"Create user\")\r",
+									"}else{\r",
+									"    postman.setNextRequest(\"Add book to wishlist\")\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "G-Token",
+								"value": "ROM831ESV",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"{{$randomEmail}}\",\r\n    \"firstNAme\": \"{{$randomFirstName}}\",\r\n    \"lastName\": \"{{$randomLastName}}\",\r\n    \"householdId\": {{householdId}}\r\n}"
+						},
+						"url": {
+							"raw": "{{host}}/users",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Add book to wishlist",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const books = pm.globals.get(\"bookIds\")\r",
+									"pm.globals.set(\"bookId\", _.sample(books))\r",
+									"\r",
+									"const wishlists = pm.globals.get(\"wishlistIds\")\r",
+									"pm.globals.set(\"wishlistId\", _.sample(wishlists))"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let wishlistCount = pm.globals.get(\"currentWishlistCount\")\r",
+									"wishlistCount++\r",
+									"pm.globals.set(\"currentWishlistCount\", wishlistCount)\r",
+									"\r",
+									"if(wishlistCount < pm.globals.get(\"numberOfWishlistAdds\")){\r",
+									"    postman.setNextRequest(\"Add book to wishlist\")\r",
+									"}else{\r",
+									"    postman.setNextRequest(\"Get books from wishlist\")\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "G-Token",
+								"value": "ROM831ESV",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{host}}/wishlists/{{wishlistId}}/books/{{bookId}}",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"wishlists",
+								"{{wishlistId}}",
+								"books",
+								"{{bookId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get books from wishlist",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.globals.unset(\"householdId\")\r",
+									"pm.globals.unset(\"numberOfUsers\")\r",
+									"pm.globals.unset(\"currentUserCount\")\r",
+									"pm.globals.unset(\"numberOfWishlistAdds\")\r",
+									"pm.globals.unset(\"currentWishlistCount\")\r",
+									"pm.globals.unset(\"wishlistIds\")\r",
+									"pm.globals.unset(\"bookIds\")\r",
+									"pm.globals.unset(\"bookId\")\r",
+									"pm.globals.unset(\"wishlistId\")"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "G-Token",
+								"value": "ROM831ESV",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{host}}/households/{{householdId}}/wishlistBooks",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"households",
+								"{{householdId}}",
+								"wishlistBooks"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Headers and Params",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "G-TOKEN",
+						"value": "ROM831ESV",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "localhost:3000/books/search?title=waste",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"books",
+						"search"
+					],
+					"query": [
+						{
+							"key": "title",
+							"value": "waste"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Post new book",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "G-TOKEN",
+						"value": "ROM831ESV",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"title\" : \"My eportfolio\",\r\n    \"author\" : \"Niklas\",\r\n    \"isbn\" : \"1234567X\",\r\n    \"releaseDate\" : \"2021-04-29\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:3000/books",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"books"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete book",
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "admin",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "admin",
+							"type": "string"
+						}
+					]
+				},
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "G-TOKEN",
+						"value": "ROM831ESV",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "localhost:3000/books/7",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"books",
+						"7"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
